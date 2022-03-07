@@ -1261,6 +1261,12 @@ func (g *Generator) generateImports() {
 	g.P("var _ = ", g.Pkg["proto"], ".Marshal")
 	g.P("var _ = ", g.Pkg["fmt"], ".Errorf")
 	g.P("var _ = ", g.Pkg["math"], ".Inf")
+	for _, packageName := range imports {
+		if packageName == "_" {
+			continue
+		}
+		g.P("var _ = ", packageName, ".File_proto_"+packageName+"_"+packageName+"_proto")
+	}
 	g.P()
 }
 
