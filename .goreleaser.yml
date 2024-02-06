@@ -9,10 +9,11 @@ before:
     - go mod download
 builds:
 - binary: micro
+  main: ./cmd/micro
   env:
     - CGO_ENABLED=0
     - GO111MODULE=on
-  ldflags: -s -w -X github.com/micro/micro/v3/cmd.GitCommit={{ .ShortCommit }} -X github.com/micro/micro/v3/cmd.GitTag={{ .Tag }} -X github.com/micro/micro/v3/cmd.BuildDate={{ .Timestamp }}
+  ldflags: -s -w -X micro.dev/v4/cmd.GitCommit={{ .ShortCommit }} -X micro.dev/v4/cmd.GitTag={{ .Tag }} -X micro.dev/v4/cmd.BuildDate={{ .Timestamp }}
   goos:
   - linux
   - darwin
@@ -24,15 +25,11 @@ builds:
   - arm64
   goarm:
   - 7
+  ignore:
+  - goos: windows
+    goarch: arm64
 archives:
 - name_template: '{{.ProjectName}}-{{.Tag}}-{{.Os}}-{{.Arch}}{{if .Arm}}{{.Arm}}{{end}}'
-  replacements:
-    darwin: darwin
-    linux: linux
-    windows: windows
-    amd64: amd64
-    arm: arm
-    arm64: arm64
   format: tar.gz
   format_overrides:
   - goos: windows

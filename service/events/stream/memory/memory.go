@@ -21,11 +21,11 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/micro/micro/v3/service/events"
-	"github.com/micro/micro/v3/service/logger"
-	"github.com/micro/micro/v3/service/store"
-	"github.com/micro/micro/v3/service/store/memory"
 	"github.com/pkg/errors"
+	"micro.dev/v4/service/events"
+	"micro.dev/v4/service/logger"
+	"micro.dev/v4/service/store"
+	"micro.dev/v4/service/store/memory"
 )
 
 // NewStream returns an initialized memory stream
@@ -187,7 +187,7 @@ func (m *mem) lookupPreviousEvents(sub *subscriber, startTime time.Time) {
 	}
 }
 
-// handleEvents sends the event to any registered subscribers.
+// handleEvent sends the event to any registered subscribers.
 func (m *mem) handleEvent(ev *events.Event) {
 	m.RLock()
 	subs := m.subs

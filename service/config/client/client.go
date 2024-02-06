@@ -4,16 +4,15 @@ import (
 	"encoding/json"
 	"net/http"
 
-	proto "github.com/micro/micro/v3/proto/config"
-	"github.com/micro/micro/v3/service/client"
-	"github.com/micro/micro/v3/service/config"
-	"github.com/micro/micro/v3/service/context"
-	"github.com/micro/micro/v3/service/errors"
+	proto "micro.dev/v4/proto/config"
+	"micro.dev/v4/service/client"
+	"micro.dev/v4/service/config"
+	"micro.dev/v4/service/context"
+	"micro.dev/v4/service/errors"
 )
 
 var (
 	defaultNamespace = "micro"
-	name             = "config"
 )
 
 type srv struct {
@@ -75,15 +74,10 @@ func (m *srv) String() string {
 	return "service"
 }
 
-func NewConfig(namespace string) *srv {
-	addr := name
-	if len(namespace) == 0 {
-		namespace = defaultNamespace
-	}
-
+func NewConfig() *srv {
 	s := &srv{
-		namespace: namespace,
-		client:    proto.NewConfigService(addr, client.DefaultClient),
+		namespace: defaultNamespace,
+		client:    proto.NewConfigService("config", client.DefaultClient),
 	}
 
 	return s

@@ -17,9 +17,9 @@
 package handler
 
 import (
-	"github.com/micro/micro/v3/service/api/router"
-	"github.com/micro/micro/v3/service/client"
-	"github.com/micro/micro/v3/service/client/grpc"
+	"micro.dev/v4/service/api/router"
+	"micro.dev/v4/service/client"
+	"micro.dev/v4/service/client/grpc"
 )
 
 var (
@@ -48,7 +48,7 @@ func NewOptions(opts ...Option) Options {
 
 	// set namespace if blank
 	if len(options.Namespace) == 0 {
-		WithNamespace("go.micro.api")(&options)
+		WithNamespace("micro")(&options)
 	}
 
 	if options.MaxRecvSize == 0 {

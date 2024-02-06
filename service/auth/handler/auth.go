@@ -10,16 +10,16 @@ import (
 
 	"github.com/google/uuid"
 
-	pb "github.com/micro/micro/v3/proto/auth"
-	"github.com/micro/micro/v3/service/auth"
-	"github.com/micro/micro/v3/service/errors"
-	"github.com/micro/micro/v3/service/logger"
-	"github.com/micro/micro/v3/service/store"
-	authns "github.com/micro/micro/v3/util/auth/namespace"
-	"github.com/micro/micro/v3/util/auth/token"
-	"github.com/micro/micro/v3/util/auth/token/basic"
-	"github.com/micro/micro/v3/util/namespace"
 	"golang.org/x/crypto/bcrypt"
+	pb "micro.dev/v4/proto/auth"
+	"micro.dev/v4/service/auth"
+	"micro.dev/v4/service/errors"
+	"micro.dev/v4/service/logger"
+	"micro.dev/v4/service/store"
+	authns "micro.dev/v4/util/auth/namespace"
+	"micro.dev/v4/util/auth/token"
+	"micro.dev/v4/util/auth/token/basic"
+	"micro.dev/v4/util/namespace"
 )
 
 const (
@@ -45,8 +45,6 @@ type Auth struct {
 
 	namespaces map[string]bool
 	sync.Mutex
-	// Prevent the generation of default accounts
-	DisableAdmin bool
 }
 
 // Init the auth
@@ -63,9 +61,6 @@ func (a *Auth) Init(opts ...auth.Option) {
 
 func (a *Auth) setupDefaultAccount(ns string) error {
 	if ns != namespace.DefaultNamespace {
-		return nil
-	}
-	if a.DisableAdmin {
 		return nil
 	}
 	a.Lock()

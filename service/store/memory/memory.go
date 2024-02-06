@@ -22,9 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/micro/micro/v3/service/store"
 	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
+	"micro.dev/v4/service/store"
 )
 
 // NewStore returns a memory store
@@ -123,7 +123,7 @@ func (m *memoryStore) set(prefix string, r *store.Record) {
 	i.value = make([]byte, len(r.Value))
 	i.metadata = make(map[string]interface{})
 
-	// copy the the value
+	// copy the value
 	copy(i.value, r.Value)
 
 	// set the expiry

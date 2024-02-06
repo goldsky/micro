@@ -25,14 +25,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/micro/micro/v3/service/api"
-	"github.com/micro/micro/v3/service/api/handler"
-	"github.com/micro/micro/v3/service/client"
-	"github.com/micro/micro/v3/service/errors"
-	"github.com/micro/micro/v3/service/logger"
-	"github.com/micro/micro/v3/util/codec/bytes"
-	"github.com/micro/micro/v3/util/ctx"
-	"github.com/micro/micro/v3/util/router"
+	"micro.dev/v4/service/api"
+	"micro.dev/v4/service/api/handler"
+	"micro.dev/v4/service/client"
+	metadata "micro.dev/v4/service/context"
+	"micro.dev/v4/service/errors"
+	"micro.dev/v4/service/logger"
+	"micro.dev/v4/util/codec/bytes"
+	"micro.dev/v4/util/ctx"
 )
 
 const (
@@ -89,24 +89,14 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, bsize)
 
 	defer r.Body.Close()
-	var service *api.Service
 
-	if h.s != nil {
-		// we were given the service
-		service = h.s
-	} else if h.opts.Router != nil {
-		// try get service from router
-		s, err := h.opts.Router.Route(r)
-		if err != nil {
-			writeError(w, r, errors.InternalServerError("go.micro.api", err.Error()))
-			return
-		}
-		service = s
-	} else {
-		// we have no way of routing the request
-		writeError(w, r, errors.InternalServerError("go.micro.api", "no route found"))
+	// try get service from router
+	service, err := h.opts.Router.Route(r)
+	if err != nil {
+		writeError(w, r, errors.InternalServerError("go.micro.api", err.Error()))
 		return
 	}
+	c := h.opts.Client
 
 	ct := r.Header.Get("Content-Type")
 
@@ -115,11 +105,16 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ct = ct[:idx]
 	}
 
-	// micro client
-	c := h.opts.Client
+	// delete some headers
 
 	// create context
 	cx := ctx.FromRequest(r)
+
+	// strip headers grpc doesn't like
+	md, _ := metadata.FromContext(cx)
+	// delete websocket info
+	delete(md, "Connection")
+	cx = metadata.NewContext(cx, md)
 
 	// set merged context to request
 	*r = *r.Clone(cx)
@@ -130,7 +125,13 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create custom router
-	callOpt := client.WithRouter(router.New(service.Services))
+	var nodes []string
+	for _, service := range service.Services {
+		for _, node := range service.Nodes {
+			nodes = append(nodes, node.Address)
+		}
+	}
+	callOpt := client.WithAddress(nodes...)
 
 	// walk the standard call path
 	// get payload
@@ -204,7 +205,7 @@ func (h *rpcHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// write the response
-	writeResponse(w, r, rsp)
+	writeResponse(w, r, rsp, ct)
 }
 
 func (rh *rpcHandler) String() string {
@@ -255,8 +256,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 }
 
-func writeResponse(w http.ResponseWriter, r *http.Request, rsp []byte) {
-	w.Header().Set("Content-Type", r.Header.Get("Content-Type"))
+func writeResponse(w http.ResponseWriter, r *http.Request, rsp []byte, ct string) {
+	w.Header().Set("Content-Type", ct)
 	w.Header().Set("Content-Length", strconv.Itoa(len(rsp)))
 
 	// Set trailers

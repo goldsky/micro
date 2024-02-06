@@ -1,39 +1,118 @@
-# Micro [![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white&style=flat-square)](https://pkg.go.dev/github.com/micro/micro/v3?tab=doc) [![License](https://img.shields.io/badge/license-apache-blue)](https://opensource.org/licenses/Apache-2.0) 
+# Micro
 
-Micro is an API first development platform.
+<p>
+    <a href="https://goreportcard.com/report/github.com/micro/micro">
+    <img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/micro/micro">
+    </a>
+	<a href="https://pkg.go.dev/micro.dev/v4?tab=doc"><img
+    alt="Go.Dev reference"
+    src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white"></a>
+    <a href="https://opensource.org/licenses/Apache-2.0"><img
+    alt="Apache License"
+    src="https://img.shields.io/badge/license-apache-blue.svg"></a>        
+</p>
+
+Micro is an API first development platform. It addresses the core requirements for building services in the cloud by providing a set of APIs which act as the building blocks of any platform. Micro deals with the complexity of distributed systems and provides simpler programmable abstractions for developers to build on. 
 
 ## Overview
 
-Micro addresses the key requirements for building services in the cloud. It leverages the microservices
-architecture pattern and provides a set of services which act as the building blocks of a platform. Micro deals
-with the complexity of distributed systems and provides simpler programmable abstractions to build on. 
+<img src="https://micro.dev/images/micro.png?v=1" />
 
-## Contents
+## Architecture
 
-- [Introduction](https://micro.dev/introduction) - A high level introduction to Micro
-- [Getting Started](https://micro.dev/getting-started) - The helloworld quickstart guide
-- [Upgrade Guide](https://micro.dev/upgrade-guide) - Update your go-micro project to use micro v3.
-- [Architecture](https://micro.dev/architecture) - Describes the architecture, design and tradeoffs
-- [Reference](https://micro.dev/reference) - In-depth reference for Micro CLI and services
-- [Resources](https://micro.dev/resources) - External resources and contributions
-- [Roadmap](https://micro.dev/roadmap) - Stuff on our agenda over the long haul
-- [FAQ](https://micro.dev/faq) - Frequently asked questions
+Below are the core components that make up Micro
 
-## Getting Started
+### Server
 
-Install micro
+Micro is built as a microkernel architecture. It abstracts away the complexity of the underlying infrastructure by providing
+a set of building block services composed as a single logical server for the end user to consume.
 
-```sh
-go install github.com/micro/micro/v3@latest
+The server consists of the following services
+
+- **Auth** - Authentication and authorization out of the box using JWT tokens and rule based access control.
+- **Broker** - Ephemeral pubsub messaging for asynchronous communication and distributing notifications
+- **Config** - Dynamic configuration and secrets management for service level config without reload
+- **Events** - Event streaming with ordered messaging, replay from offsets and persistent storage
+- **Network** - service-to-service networking and control plane for all internal request traffic
+- **Runtime** - Service lifecycle and process management with support for source to running auto build
+- **Registry** - Centralised service discovery and API endpoint explorer with feature rich metadata
+- **Store** - Key-Value storage with TTL expiry and persistent crud to keep microservices stateless
+
+### API
+
+The server embeds a HTTP API (on port 8080) which can be used to make requests as simple JSON. 
+The API automatically maps HTTP Paths and POST requests to internal RPC service names and endpoints.
+
+### Proxy
+
+Additionally there's a gRPC proxy (on port 8081) which used to make requests via the CLI or externally. 
+The proxy is identity aware which means it can be used to gatekeep remote access to Micro running anywhere.
+
+### Framework
+
+Micro comes with a built in Go framework for service based development. 
+The framework lets you write services without piecing together endless lines of boilerplate code. 
+Configured and initialised by default, import it and get started.
+
+### Command Line
+
+The command line interface includes dynamic command mapping for all services running on the platform. It turns any service instantly into a CLI command along with flag parsing 
+for inputs. Includes support for environments, namespaces, creating and running services, status info and logs.
+
+### Remote Environments
+
+Micro bakes in the concept of `Environments`. Run your server locally for development and in the cloud for production, 
+seamlessly switch between them using the CLI command `micro env set [environment]`.
+
+## Install
+
+### From Source
+
+```
+make build
 ```
 
-Run the server 
+### Prebuilt Binaries
+
+#### Windows
+
+```sh
+powershell -Command "iwr -useb https://raw.githubusercontent.com/micro/micro/master/scripts/install.ps1 | iex"
+
+```
+#### Linux
+
+```sh
+wget -q  https://raw.githubusercontent.com/micro/micro/master/scripts/install.sh -O - | /bin/bash
+```
+
+#### MacOS
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/micro/micro/master/scripts/install.sh | /bin/bash
+```
+
+### Run the server 
+
+The server starts with a single command ready to use
 
 ```sh
 micro server
 ```
 
-Login with the username 'admin' and password 'micro':
+Now go to [localhost:8080](http://localhost:8080) and make sure the output is something like `{"version": "v3.10.1"}`.
+
+## Usage
+
+Set the environment e.g local
+
+```
+micro env set local
+```
+
+### Login to Micro
+
+Default username/password: `admin/micro`
 
 ```sh
 $ micro login
@@ -46,26 +125,87 @@ See what's running:
 
 ```sh
 $ micro services
-api
 auth
 broker
 config
 events
 network
-proxy
 registry
 runtime
-server
 store
 ```
 
-Run a service
+### Create a Service
+
+Generate a service using the template
+
+```
+micro new helloworld
+```
+
+Output
+
+```
+Creating service helloworld
+
+.
+├── main.go
+├── handler
+│   └── helloworld.go
+├── proto
+│   └── helloworld.proto
+├── Makefile
+├── README.md
+├── .gitignore
+└── go.mod
+
+
+download protoc zip packages (protoc-$VERSION-$PLATFORM.zip) and install:
+
+visit https://github.com/protocolbuffers/protobuf/releases
+
+compile the proto file helloworld.proto:
+
+cd helloworld
+make init
+go mod vendor
+make proto
+```
+
+### Making changes
+
+Edit the protobuf definition in `proto/helloworld.proto` and run `make proto` to recompile
+
+Go to `handler/helloworld.go` to make changes to the response handler
+
+```go
+type Helloworld struct{}
+
+func New() *Helloworld {
+        return &Helloworld{}
+}
+
+func (h *Helloworld) Call(ctx context.Context, req *pb.Request, rsp *pb.Response) error {
+        rsp.Msg = "Hello " + req.Name
+        return nil
+}
+```
+
+### Run the service
+
+Run from local dir
+
+```
+micro run .
+```
+
+Or from a git url
 
 ```sh
 micro run github.com/micro/services/helloworld
 ```
 
-Now check the status of the running service
+### Check service status
 
 ```sh
 $ micro status
@@ -73,7 +213,7 @@ NAME		VERSION	SOURCE					STATUS	BUILD	UPDATED	METADATA
 helloworld	latest	github.com/micro/services/helloworld	running	n/a	4s ago	owner=admin, group=micro
 ```
 
-We can also have a look at logs of the service to verify it's running.
+### View service logs
 
 ```sh
 $ micro logs helloworld
@@ -82,7 +222,7 @@ $ micro logs helloworld
 2020-10-06 17:52:21  file=grpc/grpc.go:732 level=info Registry [service] Registering node: helloworld-67627b23-3336-4b92-a032-09d8d13ecf95
 ```
 
-Call the service
+### Call via CLI
 
 ```sh
 $ micro helloworld call --name=Jane
@@ -91,13 +231,15 @@ $ micro helloworld call --name=Jane
 }
 ```
 
-Curl it
+### Call via API
 
 ```
-curl "http://localhost:8080/helloworld?name=John"
+curl "http://localhost:8080/helloworld/Call?name=John"
 ```
 
-Write a client
+### Call via RPC
+
+An RPC client is used within a service and must be run by micro
 
 ```go
 package main
@@ -107,31 +249,42 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/micro/micro/v3/service"
-	proto "github.com/micro/services/helloworld/proto"
+	"micro.dev/v4/service"
+	pb "github.com/micro/services/helloworld/proto"
 )
+
+func callService(hw pb.HelloworldService) {
+	for {
+		// call an endpoint on the service
+		rsp, err := hw.Call(context.Background(), &pb.CallRequest{
+			Name: "John",
+		})
+		if err != nil {
+			fmt.Println("Error calling helloworld: ", err)
+			return
+		}
+
+		// print the response
+		fmt.Println("Response: ", rsp.Message)
+
+		time.Sleep(time.Second)
+	}
+}
 
 func main() {
 	// create and initialise a new service
-	srv := service.New()
+	srv := service.New(
+		service.Name("caller"),
+	)
 
-	// create the proto client for helloworld
-	client := proto.NewHelloworldService("helloworld", srv.Client())
-
-	// call an endpoint on the service
-	rsp, err := client.Call(context.Background(), &proto.CallRequest{
-		Name: "John",
-	})
-	if err != nil {
-		fmt.Println("Error calling helloworld: ", err)
-		return
-	}
-
-	// print the response
-	fmt.Println("Response: ", rsp.Message)
+	// new helloworld client
+	hw := pb.NewHelloworldService("helloworld", srv.Client())
 	
-	// let's delay the process for exiting for reasons you'll see below
-	time.Sleep(time.Second * 5)
+	// run the client caller
+	go callService(hw)
+	
+	// run the service
+	service.Run()
 }
 ```
 
@@ -141,12 +294,78 @@ Run it
 micro run .
 ```
 
+### Call via Go
+
+Get your user token
+
+```
+export TOKEN=`micro user token`
+```
+
+Call helloworld
+
+```go
+package main
+
+import (
+    "fmt"
+    "os"
+
+    "github.com/micro/micro-go"
+)
+
+type Request struct {
+	Name string `json:"name"`
+}
+
+type Response struct {
+	Msg string `json:"msg"`
+}
+
+func main() {
+	token := os.Getenv("TOKEN")
+	c := micro.NewClient(nil)
+
+	// set your api token
+	c.SetToken(token)
+
+   	req := &Request{
+		Name: "John",
+	}
+	
+	var rsp Response
+
+	if err := c.Call("helloworld", "Call", req, &rsp); err != nil {
+		fmt.Println(err)
+		return
+	}
+	
+	fmt.Println(rsp)
+}
+```
+
+Run it
+
+```
+go run main.go
+```
+
+### Call via JS
+
+```js
+const micro = require('micro-js-client');
+
+new micro.Client({ token: process.env.TOKEN })
+  .call('helloworld', 'Call', {"name": "Alice"})
+  .then((response) => {
+    console.log(response);
+  });
+```
+
+## Get Started
+
 For more see the [getting started](https://micro.dev/getting-started) guide.
 
-## Usage
+## Dev Env
 
-See the [docs](https://micro.dev/docs) for detailed information on the architecture, installation and use.
-
-## License
-
-See [LICENSE](LICENSE) which makes use of [Apache 2.0](https://opensource.org/licenses/Apache-2.0)
+[1 click deploy](https://marketplace.digitalocean.com/apps/micro?refcode=1eb1b2aca272&action=deploy) a Micro Dev environment on a DigitalOcean Droplet
